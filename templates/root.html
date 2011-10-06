@@ -13,6 +13,14 @@ form{
   left:1em;
   top:1em;
 }
+form p label {
+  width:100px;
+  display:inline-block;
+  text-align:right;
+}
+form input[value="find"]{
+  margin-left:106px;
+}
 circle {
   stroke-width: 1.5px;
 }
@@ -28,6 +36,7 @@ $(document).ready(function(data) {
 	$('form').submit(function(e){
 		e.preventDefault();
 		var url = $('input[name="url"]').val();
+		var year = $('input[name="year"]').val();
 		var query = $('select[name="query"]').val();
 		var csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val();
 		$.ajax({
@@ -35,6 +44,7 @@ $(document).ready(function(data) {
 			url : '/',
 			data: {
 				url : url,
+				year : year,
 				query : query,
 				csrfmiddlewaretoken : csrfmiddlewaretoken
 			},
@@ -112,13 +122,8 @@ $(document).ready(function(data) {
 <body>
 <form method="">
 	{% csrf_token %}
-	<input name="url" type="text" value="Use Discogs URL here"/>
-	<select name="query">
-		<option value="labels">Linked by label</option>
-		<option value="colabs">Colaborations</option>
-		<option value="comps">On compilations together</option>
-	</select>
-	<input type="submit" value="find" id="submit-button"/>
+	{{ form.as_p}}
+	<input type="submit" value="find">
 </form>
 <div id="result"></div>
 <script type="text/javascript" src="{{ STATIC_URL }}d3/d3.js"></script>
