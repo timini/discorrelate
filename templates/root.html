@@ -20,6 +20,15 @@ form{
   width:450px;
   padding-bottom:0.8em;
 }
+#status{
+  position:absolute;
+  top:176px;
+  left:150px;
+}
+#status .progress{
+  width:60px;
+  display:inline-block;
+}
 form p span.helptext{
   display:block;
   font-style:italic;
@@ -43,18 +52,16 @@ form h2{
 circle {
   stroke-width: 1.5px;
 }
-.legend{
-  position:absolute;
-  right:10em;
-  bottom:2em;
-}
 line {
   stroke: #999;
 }
 .nodetext { pointer-events: none; font: 10px sans-serif; }
 
+.hidden { display: none !important; visibility: hidden; }
 </style>
 <script type="text/javascript">
+var loading_status = null;
+
 $(document).ready(function(data) {
 	$('form').submit(function(e){
 		e.preventDefault();
@@ -71,121 +78,158 @@ $(document).ready(function(data) {
 				//query : query,
 				csrfmiddlewaretoken : csrfmiddlewaretoken
 			},
-			success : function(json){
-				d3.selectAll("svg").remove();
-				
-			var w = $(window).width(),
-			    h = $(window).height(),
-			    r = 10,
-			    fill = d3.scale.category20();
-
-			var force = d3.layout.force()
-			    .gravity(0.05)
-			    .charge(-200)
-			    .linkDistance(80)
-			    .size([w, h]);
-
-			var svg = d3.select("body").append("svg:svg")
-			    .attr("width", w)
-			    .attr("height", h);
-
-			var link = svg.selectAll("line")
-			    .data(json.links)
-			    .enter().append("svg:line")
-			    .style("stroke-width", function(d) { return Math.sqrt(d.value); });
-
-			var node = svg.selectAll("g.node")
-			    .data(json.nodes)
-			    .enter().append("svg:g")
-			    .attr("class", "node")
-			    .call(force.drag);
-			
-			var types = {};
-			
-			node
-				.append("svg:circle")
-				.attr("r", r - .75)
-				.style("fill", function(d) { 
-					if(!types[d.type]){
-						types[d.type] = 1;
-					} else {
-						types[d.type]++;
-					}
-					return fill(d.type);
-				})
-				.style("stroke", function(d) { return d3.rgb(fill(d.type)).darker(); })
-			    .on("click", function(d){
-		    	    alert(d.discogs);
-		    	});
-			
-			var legend = svg.append("svg:g")
-				.attr("class", "legend")
-				.attr("transform", "translate("+(w-100)+","+(h-40)+")scale(-1,-1)");
-			
-			var types_array = (function() {
-					var a = [];
-					for(var t in types) {
-						a.push({'name':t,'value':types[t]});
-					}
-					return a;
-				})();
-			
-			var labels = legend.selectAll("g.label")
-				.data(types_array)
-				.append("svg:circle")
-				.attr("r", function(d){return d.value;})
-				.style("fill", function(d){return fill(d.name);})
-				.style("stroke", function(d) { return d3.rgb(fill(t.name)).darker(); })
-				.append("svg:text")
-				.attr("class", "nodetext")
-				.attr("dx", 12)
-			    .attr("dy", ".3em")
-			    .text(function(d){return d.name;});
-			
-			
-			node
-				.append("svg:title")
-		        .text(function(d) { return d.discogs; });
-			
-			node
-				.append("svg:text")
-				.attr("class", "nodetext")
-			    .attr("dx", 12)
-			    .attr("dy", ".3em")
-			    .text(function(d) { 
-			    	if (d.title){
-			    		return d.title;
-			    	} else {
-			    		return d.name;
-			    	}
-			    });
-
-			force
-			    .nodes(json.nodes)
-			    .links(json.links)
-			    .on("tick", tick)
-			    .start();
-
-			  function tick() {
-				  
-				force.start();
-				
-			    node
-			        .attr("transform", function(d) { 
-			        	//return "translate(" + ((d.x - d.px)+w/2) + "," + ((d.y - d.py)+h/2) + ")"; 
-			        	return "translate(" + d.x + "," + d.y + ")";
-			        });
-
- 			    link.attr("x1", function(d) { return d.source.x; })
- 			        .attr("y1", function(d) { return d.source.y; })
- 			        .attr("x2", function(d) { return d.target.x; })
- 			        .attr("y2", function(d) { return d.target.y; });
-			    
-			  }
-			}
+			success : graph
 		});
+		loading_status = setInterval(loader, 500)
 	});
 });
+var graph = function(json){
+	
+	clearInterval(loading_status);
+	$("#status").addClass("hidden");
+	
+	d3.selectAll("svg").remove();
+	
+var w = $(window).width(),
+    h = $(window).height(),
+    r = 10,
+    fill = d3.scale.category20();
+
+var force = d3.layout.force()
+    .gravity(0.05)
+    .charge(-200)
+    .linkDistance(80)
+    .size([w, h]);
+
+var svg = d3.select("body").append("svg:svg")
+    .attr("width", w)
+    .attr("height", h);
+
+var link = svg.selectAll("line")
+    .data(json.links)
+    .enter().append("svg:line")
+    .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+var node = svg.selectAll("g.node")
+    .data(json.nodes)
+    .enter().append("svg:g")
+    .attr("class", "node")
+    .call(force.drag);
+
+var types = {};
+
+node
+	.append("svg:circle")
+	.attr("r", r - .75)
+	.style("fill", function(d) { 
+		if(!types[d.type]){
+			types[d.type] = 1;
+		} else {
+			types[d.type]++;
+		}
+		return fill(d.type);
+	})
+	.style("stroke", function(d) { return d3.rgb(fill(d.type)).darker(); })
+    .on("click", function(d){
+	    alert(d.discogs);
+	});
+
+var legend = svg.append("svg:g")
+	.attr("class", "legend")
+	.attr("transform", "translate("+(w-120)+","+(h-20)+")");
+
+var types_array = (function() {
+		var a = [];
+		for(var t in types) {
+			a.push({'name':t,'value':types[t]});
+		}
+		return a;
+	})();
+
+var spacer = 0;
+var labels = legend.selectAll("g.label")
+	.data(types_array)
+	.enter()
+	.append("svg:g")
+	.attr("transform", function(d){ 
+		foo = "translate("+-spacer+",0)";
+		spacer += (2*r)+2;
+		return foo;
+	});
+
+	labels
+	.append("svg:circle")
+	.attr("r", r-0.75)
+	.style("fill", function(d){return fill(d.name);})
+	.style("stroke", function(d) { return d3.rgb(fill(d.name)).darker(); });
+	
+	labels
+	.append("svg:text")
+	.attr("class", "nodetext")
+	.attr("transform", "rotate(-60)")
+	.attr("dx", 12)
+    .attr("dy", ".3em")
+    .text(function(d){return d.name;});
+
+
+node
+	.append("svg:title")
+    .text(function(d) { return d.discogs; });
+
+node
+	.append("svg:text")
+	.attr("class", "nodetext")
+    .attr("dx", 12)
+    .attr("dy", ".3em")
+    .text(function(d) { 
+    	if (d.title){
+    		return d.title;
+    	} else {
+    		return d.name;
+    	}
+    });
+
+force
+    .nodes(json.nodes)
+    .links(json.links)
+    .on("tick", tick)
+    .start();
+
+  function tick() {
+	  
+	force.start();
+	
+    node
+        .attr("transform", function(d) { 
+        	//return "translate(" + ((d.x - d.px)+w/2) + "," + ((d.y - d.py)+h/2) + ")"; 
+        	return "translate(" + d.x + "," + d.y + ")";
+        });
+
+	    link.attr("x1", function(d) { return d.source.x; })
+	        .attr("y1", function(d) { return d.source.y; })
+	        .attr("x2", function(d) { return d.target.x; })
+	        .attr("y2", function(d) { return d.target.y; });
+    
+  }
+}
+var counter =  0;
+function loader(){
+	$("#status").removeClass("hidden");
+	switch(counter){
+	case 0:
+		$("#status .progress").contents().remove();
+		$("#status .progress").append("loading");
+		break;
+	case 1: case 2:
+		$("#status .progress").append(".");
+		break;
+	case 3:
+		$("#status .progress").append(".");
+		break;
+	}
+	counter++;
+	if (counter>=4) {counter = 0;}
+}
 </script>
 </head>
 <body>
@@ -195,6 +239,10 @@ $(document).ready(function(data) {
 	{{ form.as_p}}
 	<input type="submit" value="find">
 </form>
+<div id="status" class="hidden">
+  <span class="progress"></span>
+  <span class="caution">(this may take a while)</span>
+</div>
 <div id="result"></div>
 <script type="text/javascript" src="{{ STATIC_URL }}d3/d3.js"></script>
 <script type="text/javascript" src="{{STATIC_URL}}d3/d3.geom.js"></script>
